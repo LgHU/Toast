@@ -42,6 +42,9 @@ static NSString * const Default_text = @"  ";
 //默认文字提示视图
 @property (nonatomic, strong) UILabel *msgLabel;
 
+@property (nonatomic, assign) BOOL backgroundViewEnable;
+@property (nonatomic, strong) UIColor *backgroundViewColor;
+
 
 @end
 
@@ -55,7 +58,6 @@ static NSString * const Default_text = @"  ";
     dispatch_once(&onceToken, ^{
         sharedInstance = [[self alloc] init];
     });
-    [sharedInstance defaultConfig];
     return sharedInstance;
 }
 
@@ -107,10 +109,24 @@ static NSString * const Default_text = @"  ";
     self.toastTextColor = [UIColor whiteColor];
     self.toastDuration = Default_Display_Duration;
     self.toastFontSize = Default_Font_Size;
+    self.backgroundViewEnable = NO;
+    self.backgroundViewColor = [UIColor clearColor];
 }
 
 
 #pragma mark - Public
+
+//TODO:设置背景是否展示 ，默认 enable = NO
++ (void)setCoverBackgroundEnable:(BOOL)enable {
+    MPCToast *toast = [MPCToast sharedInstance];
+    toast.backgroundViewEnable = enable;
+}
+
+//TODO:设置背景色 ，默认 color = [[UIColor lightGrayColor] colorWithAlphaComponent:.5]
++ (void)setCoverBackgroundColor:(UIColor*)color {
+    MPCToast *toast = [MPCToast sharedInstance];
+    toast.backgroundViewColor = color;
+}
 
 - (void(^)(void))show {
     return ^(){
@@ -123,12 +139,12 @@ static NSString * const Default_text = @"  ";
 //TODO:简单展示文本
 //*************************************************************************
 + (void)showWithText:(NSString *)text {
-    [[self class]showWithText:text inView:nil duration:Default_Display_Duration];
+    [[self class]showWithText:text duration:Default_Display_Duration];
 }
 
 //TODO:简单展示文本，设置特定的时间
 + (void)showWithText:(NSString *)text duration:(CGFloat)duration {
-    [[self class]showWithText:text inView:nil duration:duration];
+    [[self class]showWithText:text topOffset:0 duration:duration];
 }
 
 //*************************************************************************
@@ -272,13 +288,14 @@ static NSString * const Default_text = @"  ";
     }
     
     [toast setToastDuration:duration];
-    [toast showToast];
+    toast.show();
 }
 
 //*************************************************************************
 //TODO:自定义视图基类展示方法
 //*************************************************************************
-+ (void)showWithContentView:(UIView*)content inView:(UIView*)view topMargin:(CGFloat)topMargin bottomMargin:(CGFloat)bottomMargin duration:(CGFloat)duration {
++ (void)showWithContentView:(UIView*)content inView:(UIView*)view topMargin:(CGFloat)topMargin bottomMargin:(CGFloat)bottomMargin duration:(CGFloat)duration{
+    NSParameterAssert([content isKindOfClass:[UIView class]]);
     [[MPCToast sharedInstance] hideAnimationComplete:^{
         MPCToast *toast = [MPCToast sharedInstance];
         toast.contentView = content;
@@ -330,14 +347,17 @@ static NSString * const Default_text = @"  ";
 
 -(void)showAnimation {
     if (self.contentView.alpha > 0.8) self.contentView.alpha = 0.8;
+    if (self.backgroundView.alpha > 0.8) self.backgroundView.alpha = 0.8;
     [UIView animateWithDuration:0.25 animations:^{
         self.contentView.alpha = 1.0;
+        self.backgroundView.alpha = 1.0;
     }];
 }
 
 -(void)hideAnimationComplete:(void(^)(void))complete{
     [UIView animateWithDuration:0.25 animations:^{
         self.contentView.alpha = 0.0;
+        self.backgroundView.alpha = 0.0;
     } completion:^(BOOL finished){
         if (finished) { [self dismissToastComplete:complete]; }
     }];
@@ -346,6 +366,7 @@ static NSString * const Default_text = @"  ";
 -(void)hideAnimation{
     [UIView animateWithDuration:0.25 animations:^{
         self.contentView.alpha = 0.0;
+        self.backgroundView.alpha = 0.0;
     } completion:^(BOOL finished){
         if (finished) { [self dismissToastComplete:nil]; }
     }];
@@ -353,6 +374,7 @@ static NSString * const Default_text = @"  ";
 
 -(void)dismissToastComplete:(void(^)(void))complete {
     [self.contentView removeFromSuperview];
+    [self.backgroundView removeFromSuperview];
     if (complete) {
         complete();
     }
@@ -387,12 +409,29 @@ static NSString * const Default_text = @"  ";
         [self.contentView removeFromSuperview];
         [view addSubview:self.contentView];
     }
+    
+    [self.backgroundView removeFromSuperview];
+    self.backgroundView.backgroundColor = self.backgroundViewColor;
+    self.backgroundView.hidden = !self.backgroundViewEnable;
+    self.backgroundView.frame = view.bounds;
+    [view insertSubview:self.backgroundView belowSubview:self.contentView];
+    
     self.contentView.center = center;
     [NSObject cancelPreviousPerformRequestsWithTarget:self];
     [self showAnimation];
     if (self.toastDuration < 0) return;
     if (self.toastDuration == 0) self.toastDuration = Default_Display_Duration;
     [self performSelector:@selector(hideAnimation) withObject:nil afterDelay:self.toastDuration];
+}
+
+#pragma mark - Getter
+
+- (UIView *)backgroundView {
+    if (!_backgroundView) {
+        _backgroundView = [[UIView alloc]init];
+    }
+    
+    return _backgroundView;
 }
 
 @end
