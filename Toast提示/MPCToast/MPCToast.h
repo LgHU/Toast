@@ -11,8 +11,8 @@
 @interface MPCToast : UIView
 /*
  * MPCToast说明：主要用于展示Toast提示，
-              ①默认keywindow上展示视图，展示的位置默认是视图中间位置，如果设置了 topMargin和bottomMargin，则会在中点的基础上上移或者下移
-              ②展示在特定的view上展示，展示的位置默认为视图的中间，如果设置了 topMargin和bottomMargin，则会在中点的基础上上移或者下移
+              ①默认keywindow上展示视图，展示的位置默认是视图中间位置，如果设置了 topMargin和bottomMargin，则会根据设置展示
+              ②展示在特定的view上展示，展示的位置默认为视图的中间，如果设置了 topMargin和bottomMargin，则会根据设置展示
  
  注意：展示自定义视图的时候，自定义视图的尺寸需要设置好。
  */
